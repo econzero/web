@@ -17,9 +17,9 @@ import { useMemo } from 'react'
 import { usdcAssetId } from 'test/mocks/accounts'
 import { Text } from 'components/Text'
 
-import { WithBackButton } from '../WithBackButton'
-import { LimitOrderCard } from './components/LimitOrderCard'
-import { LimitOrderStatus } from './types'
+import { WithBackButton } from '../../WithBackButton'
+import { LimitOrderStatus } from '../types'
+import { LimitOrderCard } from './LimitOrderCard'
 
 type LimitOrderListProps = {
   isLoading: boolean
