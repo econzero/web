@@ -1,6 +1,6 @@
 import { createApi, fakeBaseQuery } from '@reduxjs/toolkit/dist/query/react'
-import type { AssetId } from '@shapeshiftoss/caip'
-import { type ChainId, fromAssetId, fromChainId } from '@shapeshiftoss/caip'
+import type { AccountId, AssetId } from '@shapeshiftoss/caip'
+import { type ChainId, fromAccountId, fromAssetId, fromChainId } from '@shapeshiftoss/caip'
 import type { SignTypedDataInput } from '@shapeshiftoss/chain-adapters'
 import { toAddressNList } from '@shapeshiftoss/chain-adapters'
 import type { ETHSignTypedData, HDWallet } from '@shapeshiftoss/hdwallet-core'
@@ -42,7 +42,10 @@ import { zeroAddress } from 'viem'
 import { assertGetEvmChainAdapter } from 'lib/utils/evm'
 import type { ReduxState } from 'state/reducer'
 import { selectConfirmedLimitOrder } from 'state/slices/limitOrderSlice/selectors'
-import { selectPortfolioAccountMetadataByAccountId } from 'state/slices/selectors'
+import {
+  selectEvmAccountIds,
+  selectPortfolioAccountMetadataByAccountId,
+} from 'state/slices/selectors'
 
 import { BASE_RTK_CREATE_API_CONFIG } from '../const'
 
@@ -252,18 +255,39 @@ export const limitOrderApi = createApi({
         return { data: result.data }
       },
     }),
-    getOrders: build.query<Order[], { payload: GetOrdersRequest; chainId: ChainId }>({
-      queryFn: async ({ payload, chainId }) => {
+    getOrders: build.query<{ orders: Order[]; failedAccountIds: AccountId[] }, AccountId[]>({
+      queryFn: async (evmAccountIds: AccountId[]) => {
         const config = getConfig()
         const baseUrl = config.REACT_APP_COWSWAP_BASE_URL
-        const maybeNetwork = getCowswapNetwork(chainId)
-        if (maybeNetwork.isErr()) throw maybeNetwork.unwrapErr()
-        const network = maybeNetwork.unwrap()
-        const result = await axios.post<Order[]>(
-          `${baseUrl}/${network}/api/v1/account/${payload.owner}/orders`,
-          { limit: payload.limit, offset: payload.offset },
+
+        const promiseSettledResults = await Promise.allSettled(
+          evmAccountIds.map(async accountId => {
+            const { account, chainId } = fromAccountId(accountId)
+            const maybeNetwork = getCowswapNetwork(chainId)
+            if (maybeNetwork.isErr()) throw maybeNetwork.unwrapErr()
+            const network = maybeNetwork.unwrap()
+            const result = await axios.get<Order[]>(
+              // TODO: Implement paging for users with >1000 orders
+              `${baseUrl}/${network}/api/v1/account/${account}/orders?limit=1000`,
+            )
+
+            return result.data
+          }),
         )
-        return { data: result.data }
+
+        const orders = []
+        const failedAccountIds = []
+
+        for (let i = 0; i < promiseSettledResults.length; i++) {
+          const promiseSettledResult = promiseSettledResults[i]
+          if (promiseSettledResult.status === 'rejected') {
+            failedAccountIds.push(evmAccountIds[i])
+          } else {
+            orders.push(...promiseSettledResult.value)
+          }
+        }
+
+        return { data: { orders, failedAccountIds } }
       },
     }),
   }),

@@ -12,10 +12,14 @@ import {
   Tabs,
 } from '@chakra-ui/react'
 import { foxAssetId } from '@shapeshiftoss/caip'
+import { useQuery } from '@tanstack/react-query'
+import { getConfig } from 'config'
 import type { FC } from 'react'
 import { useMemo } from 'react'
 import { usdcAssetId } from 'test/mocks/accounts'
 import { Text } from 'components/Text'
+import { selectAccountIdsByChainId, selectEvmAccountIds } from 'state/slices/selectors'
+import { useAppSelector } from 'state/store'
 
 import { WithBackButton } from '../../WithBackButton'
 import { LimitOrderStatus } from '../types'
@@ -39,6 +43,8 @@ export const LimitOrderList: FC<LimitOrderListProps> = ({ cardProps, onBack }) =
       }),
     }
   }, [onBack])
+
+  const evmAccountIds = useAppSelector(selectEvmAccountIds)
 
   // FIXME: Use real data
   const MockOpenOrderCard = () => (
