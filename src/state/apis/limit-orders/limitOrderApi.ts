@@ -15,7 +15,6 @@ import {
 } from '@shapeshiftoss/swapper/dist/swappers/CowSwapper/utils/helpers/helpers'
 import { isNativeEvmAsset } from '@shapeshiftoss/swapper/dist/swappers/utils/helpers/helpers'
 import type {
-  GetOrdersRequest,
   Order,
   OrderCancellation,
   OrderId,
@@ -42,10 +41,7 @@ import { zeroAddress } from 'viem'
 import { assertGetEvmChainAdapter } from 'lib/utils/evm'
 import type { ReduxState } from 'state/reducer'
 import { selectConfirmedLimitOrder } from 'state/slices/limitOrderSlice/selectors'
-import {
-  selectEvmAccountIds,
-  selectPortfolioAccountMetadataByAccountId,
-} from 'state/slices/selectors'
+import { selectPortfolioAccountMetadataByAccountId } from 'state/slices/selectors'
 
 import { BASE_RTK_CREATE_API_CONFIG } from '../const'
 
@@ -293,4 +289,5 @@ export const limitOrderApi = createApi({
   }),
 })
 
-export const { useQuoteLimitOrderQuery, usePlaceLimitOrderMutation } = limitOrderApi
+export const { useQuoteLimitOrderQuery, useGetOrdersQuery, usePlaceLimitOrderMutation } =
+  limitOrderApi
